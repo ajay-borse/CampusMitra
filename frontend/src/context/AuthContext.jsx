@@ -7,7 +7,9 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const { showToast } = useToast();
 
-  const [token, setToken] = useState(() => localStorage.getItem('campusmitra_token') || null);
+  const [token, setToken] = useState(
+    () => localStorage.getItem('campusmitra_token') || localStorage.getItem('token') || null
+  );
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('campusmitra_user');
@@ -30,7 +32,7 @@ export function AuthProvider({ children }) {
 
   // Synchronize user profile from backend
   const refreshUser = useCallback(async () => {
-    const currentToken = localStorage.getItem('campusmitra_token');
+    const currentToken = localStorage.getItem('campusmitra_token') || localStorage.getItem('token');
     if (!currentToken) {
       setIsLoading(false);
       return;
@@ -65,6 +67,7 @@ export function AuthProvider({ children }) {
       setProfile(null);
       setToken(null);
       localStorage.removeItem('campusmitra_token');
+      localStorage.removeItem('token');
       localStorage.removeItem('campusmitra_user');
       localStorage.removeItem('campusmitra_profile');
       showToast('Your session has expired. Please log in again.', 'warning');
@@ -83,13 +86,14 @@ export function AuthProvider({ children }) {
         setUser(newUser);
         setProfile(newProfile);
         localStorage.setItem('campusmitra_token', newToken);
+        localStorage.setItem('token', newToken);
         localStorage.setItem('campusmitra_user', JSON.stringify(newUser));
         if (newProfile) {
           localStorage.setItem('campusmitra_profile', JSON.stringify(newProfile));
         }
         setIsDBUnavailable(false);
         showToast(`Welcome back, ${newUser.firstName}! 🎓`, 'success');
-        return { success: true, user: newUser };
+        return { success: true, user: newUser, profile: newProfile };
       }
       return { success: false, message: 'Invalid response from server' };
     } catch (err) {
@@ -108,13 +112,14 @@ export function AuthProvider({ children }) {
         setUser(newUser);
         setProfile(newProfile);
         localStorage.setItem('campusmitra_token', newToken);
+        localStorage.setItem('token', newToken);
         localStorage.setItem('campusmitra_user', JSON.stringify(newUser));
         if (newProfile) {
           localStorage.setItem('campusmitra_profile', JSON.stringify(newProfile));
         }
         setIsDBUnavailable(false);
         showToast(`Account created! Welcome to CampusMitra, ${newUser.firstName}! 🎉`, 'success');
-        return { success: true, user: newUser, verificationUrl: res.data.verificationUrl };
+        return { success: true, user: newUser, profile: newProfile, verificationUrl: res.data.verificationUrl };
       }
       return { success: false, message: 'Registration response was empty' };
     } catch (err) {
@@ -129,6 +134,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     setProfile(null);
     localStorage.removeItem('campusmitra_token');
+    localStorage.removeItem('token');
     localStorage.removeItem('campusmitra_user');
     localStorage.removeItem('campusmitra_profile');
     showToast('Logged out successfully.', 'info');

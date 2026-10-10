@@ -5,6 +5,7 @@ import { SocketProvider } from './context/SocketContext';
 
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -12,6 +13,10 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import DiscoverPage from './pages/DiscoverPage';
 import ConnectionsPage from './pages/ConnectionsPage';
+import RadarPage from './pages/RadarPage';
+import PlansPage from './pages/PlansPage';
+import CirclesPage from './pages/CirclesPage';
+import PulsePage from './pages/PulsePage';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import EditProfilePage from './pages/EditProfilePage';
@@ -24,11 +29,12 @@ import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <SocketProvider>
-          <Router>
-            <Routes>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <Router>
+              <Routes>
               <Route element={<MainLayout />}>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
@@ -68,6 +74,38 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <ConnectionsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/radar"
+                  element={
+                    <ProtectedRoute>
+                      <RadarPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/plans"
+                  element={
+                    <ProtectedRoute>
+                      <PlansPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/circles"
+                  element={
+                    <ProtectedRoute>
+                      <CirclesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/pulse"
+                  element={
+                    <ProtectedRoute>
+                      <PulsePage />
                     </ProtectedRoute>
                   }
                 />
@@ -128,5 +166,6 @@ export default function App() {
         </SocketProvider>
       </AuthProvider>
     </ToastProvider>
+  </ErrorBoundary>
   );
 }

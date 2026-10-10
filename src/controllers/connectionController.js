@@ -3,7 +3,44 @@ const Conversation = require('../models/Conversation');
 const Notification = require('../models/Notification');
 const Profile = require('../models/Profile');
 const User = require('../models/User');
+const Block = require('../models/Block');
 const { getSocketIO } = require('../sockets/chatSocket');
+
+const getOrCreateConversation = async (userId1, userId2) => {
+  const sortedIds = [userId1.toString(), userId2.toString()].sort();
+  const pairKey = sortedIds.join('_');
+
+  let conversation = await Conversation.findOne({
+    $or: [
+      { pairKey },
+      { participants: { $all: [userId1, userId2] } },
+    ],
+  });
+
+  if (!conversation) {
+    try {
+      conversation = await Conversation.findOneAndUpdate(
+        { pairKey },
+        {
+          $setOnInsert: {
+            participants: [userId1, userId2],
+            pairKey,
+          },
+        },
+        { upsert: true, new: true }
+      );
+    } catch (err) {
+      conversation = await Conversation.findOne({
+        $or: [
+          { pairKey },
+          { participants: { $all: [userId1, userId2] } },
+        ],
+      });
+    }
+  }
+
+  return conversation;
+};
 
 // ============================================================================
 // @desc    Express interest in a student profile (Swipe Right)
@@ -37,7 +74,52 @@ const sendInterest = async (req, res, next) => {
       });
     }
 
-    // Check if targetUser has already expressed interest in current user
+    // 1. Check for active blocks in either direction
+    const isBlocked = await Block.findOne({
+      $or: [
+        { blocker: currentUserId, blockedUser: targetUserId },
+        { blocker: targetUserId, blockedUser: currentUserId },
+      ],
+    });
+
+    if (isBlocked) {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot connect with this user due to block or privacy settings',
+      });
+    }
+
+    const targetProfile = await Profile.findOne({ user: targetUserId });
+
+    // 2. Check if already matched / connected (status: 'accepted')
+    const existingAccepted = await Connection.findOne({
+      $or: [
+        { user1: currentUserId, user2: targetUserId },
+        { user1: targetUserId, user2: currentUserId },
+      ],
+      status: 'accepted',
+    });
+
+    if (existingAccepted) {
+      const conversation = await getOrCreateConversation(currentUserId, targetUserId);
+      return res.status(200).json({
+        success: true,
+        message: 'Already connected',
+        data: {
+          isMatch: true,
+          conversationId: conversation?._id || null,
+          matchedUser: {
+            id: targetUser._id,
+            name: `${targetUser.firstName} ${targetUser.lastName}`,
+            firstName: targetUser.firstName,
+            avatar: targetProfile?.photos?.[0] || null,
+            program: targetProfile?.program,
+          },
+        },
+      });
+    }
+
+    // 3. Check if targetUser has already expressed interest in current user
     const reverseInterest = await Connection.findOne({
       user1: targetUserId,
       user2: currentUserId,
@@ -54,16 +136,15 @@ const sendInterest = async (req, res, next) => {
       reverseInterest.type = 'match';
       await reverseInterest.save();
 
-      // 1. Create or find direct conversation
-      let conversation = await Conversation.findOne({
-        participants: { $all: [currentUserId, targetUserId] },
+      // Clean up any reciprocal one-way record
+      await Connection.deleteMany({
+        user1: currentUserId,
+        user2: targetUserId,
+        _id: { $ne: reverseInterest._id },
       });
 
-      if (!conversation) {
-        conversation = await Conversation.create({
-          participants: [currentUserId, targetUserId],
-        });
-      }
+      // 1. Create or find direct conversation atomically
+      const conversation = await getOrCreateConversation(currentUserId, targetUserId);
       conversationId = conversation._id;
 
       // 2. Create mutual match notification for both students
@@ -98,6 +179,25 @@ const sendInterest = async (req, res, next) => {
         });
       }
     } else {
+      // Check if current user has already expressed interest
+      const myExistingInterest = await Connection.findOne({
+        user1: currentUserId,
+        user2: targetUserId,
+        status: 'interested',
+      });
+
+      if (myExistingInterest) {
+        return res.status(200).json({
+          success: true,
+          message: 'Interest already recorded',
+          data: {
+            isMatch: false,
+            conversationId: null,
+            matchedUser: null,
+          },
+        });
+      }
+
       // Create new one-way interest connection
       await Connection.findOneAndUpdate(
         { user1: currentUserId, user2: targetUserId },
@@ -105,18 +205,43 @@ const sendInterest = async (req, res, next) => {
         { upsert: true, returnDocument: 'after' }
       );
 
-      // Create notification for target user
-      await Notification.create({
-        recipient: targetUserId,
-        sender: currentUserId,
-        type: 'interest',
-        title: 'New Campus Interest 💜',
-        message: 'A student on campus expressed interest in connecting with you.',
-        data: { senderId: currentUserId },
+      // Check if target user expressed interest concurrently
+      const concurrentReverse = await Connection.findOne({
+        user1: targetUserId,
+        user2: currentUserId,
+        status: { $in: ['interested', 'accepted'] },
       });
-    }
 
-    const targetProfile = await Profile.findOne({ user: targetUserId });
+      if (concurrentReverse && concurrentReverse.status === 'interested') {
+        isMatch = true;
+        concurrentReverse.status = 'accepted';
+        concurrentReverse.type = 'match';
+        await concurrentReverse.save();
+
+        await Connection.deleteMany({
+          user1: currentUserId,
+          user2: targetUserId,
+          _id: { $ne: concurrentReverse._id },
+        });
+
+        const conversation = await getOrCreateConversation(currentUserId, targetUserId);
+        conversationId = conversation._id;
+      } else if (concurrentReverse && concurrentReverse.status === 'accepted') {
+        isMatch = true;
+        const conv = await getOrCreateConversation(currentUserId, targetUserId);
+        conversationId = conv?._id || null;
+      } else {
+        // Create notification for target user
+        await Notification.create({
+          recipient: targetUserId,
+          sender: currentUserId,
+          type: 'interest',
+          title: 'New Campus Interest 💜',
+          message: 'A student on campus expressed interest in connecting with you.',
+          data: { senderId: currentUserId },
+        });
+      }
+    }
 
     return res.status(200).json({
       success: true,

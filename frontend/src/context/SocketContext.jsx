@@ -29,7 +29,9 @@ export function SocketProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated || !token) {
+    const activeToken = token || localStorage.getItem('campusmitra_token') || localStorage.getItem('token');
+
+    if (!isAuthenticated || !activeToken) {
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -41,7 +43,7 @@ export function SocketProvider({ children }) {
     const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     const socket = io(socketUrl, {
-      auth: { token },
+      auth: { token: activeToken },
       reconnectionAttempts: 5,
       reconnectionDelay: 2000,
       transports: ['websocket', 'polling'],
@@ -53,12 +55,17 @@ export function SocketProvider({ children }) {
       setIsConnected(true);
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
       setIsConnected(false);
+      if (reason === 'io server disconnect') {
+        // the disconnection was initiated by the server, reconnect manually
+        socket.connect();
+      }
     });
 
     socket.on('connect_error', (err) => {
       setIsConnected(false);
+      console.warn('Socket connection notice:', err?.message || err);
     });
 
     // Real-time mutual match celebration

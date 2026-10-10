@@ -13,7 +13,9 @@ const apiClient = axios.create({
 // Interceptor: Attach JWT bearer token from localStorage
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('campusmitra_token');
+    const token =
+      localStorage.getItem('campusmitra_token') ||
+      localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -34,6 +36,7 @@ apiClient.interceptors.response.use(
       const url = error.config?.url || '';
       if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
         localStorage.removeItem('campusmitra_token');
+        localStorage.removeItem('token');
         localStorage.removeItem('campusmitra_user');
         window.dispatchEvent(new Event('auth:unauthorized'));
       }

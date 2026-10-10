@@ -20,6 +20,11 @@ const adminRoutes = require('./routes/adminRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const verificationRoutes = require('./routes/verificationRoutes');
 const interestRoutes = require('./routes/interestRoutes');
+const planRoutes = require('./routes/planRoutes');
+const circleRoutes = require('./routes/circleRoutes');
+const pulseRoutes = require('./routes/pulseRoutes');
+const vibeRoutes = require('./routes/vibeRoutes');
+const radarRoutes = require('./routes/radarRoutes');
 
 // Initialize Express Application & HTTP Server
 const app = express();
@@ -78,6 +83,11 @@ app.get('/', (req, res) => {
       moderation: '/api/moderation',
       admin: '/api/admin',
       students: '/api/students',
+      plans: '/api/plans',
+      circles: '/api/circles',
+      pulse: '/api/pulse',
+      vibe: '/api/vibe',
+      radar: '/api/radar',
     },
   });
 });
@@ -92,6 +102,11 @@ app.use('/api/profiles', requireDB, profileRoutes);
 app.use('/api/discover', requireDB, discoverRoutes);
 app.use('/api/connections', requireDB, connectionRoutes);
 app.use('/api/conversations', requireDB, chatRoutes);
+app.use('/api/plans', requireDB, planRoutes);
+app.use('/api/circles', requireDB, circleRoutes);
+app.use('/api/pulse', requireDB, pulseRoutes);
+app.use('/api/vibe', requireDB, vibeRoutes);
+app.use('/api/radar', requireDB, radarRoutes);
 app.use('/api/notifications', requireDB, notificationRoutes);
 app.use('/api/moderation', requireDB, moderationRoutes);
 app.post('/api/reports', requireDB, require('./middleware/authMiddleware').protect, require('./controllers/moderationController').reportUser);

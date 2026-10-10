@@ -1,16 +1,34 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, MessageSquare, Search, GraduationCap, Sparkles, Compass, ShieldCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Users,
+  MessageSquare,
+  Search,
+  GraduationCap,
+  Sparkles,
+  Compass,
+  ShieldCheck,
+  Zap,
+  X,
+  Check,
+} from 'lucide-react';
 import { connectionApi } from '../api/connectionApi';
+import { vibeApi } from '../api/vibeApi';
 import { useToast } from '../context/ToastContext';
 import EmptyState from '../components/EmptyState';
 import { CardSkeleton } from '../components/SkeletonLoader';
 
 export default function ConnectionsPage() {
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Vibe Breakdown Modal State
+  const [vibePartner, setVibePartner] = useState(null);
+  const [vibeData, setVibeData] = useState(null);
+  const [vibeLoading, setVibeLoading] = useState(false);
 
   const fetchConnections = async () => {
     try {
@@ -29,6 +47,23 @@ export default function ConnectionsPage() {
   useEffect(() => {
     fetchConnections();
   }, []);
+
+  const handleOpenVibe = async (conn) => {
+    const targetUserId = conn.userId || conn.user?._id;
+    if (!targetUserId) return;
+    setVibePartner(conn);
+    setVibeLoading(true);
+    try {
+      const res = await vibeApi.getProfileVibe(targetUserId);
+      if (res?.success) {
+        setVibeData(res.data);
+      }
+    } catch {
+      showToast('Could not load vibe breakdown.', 'error');
+    } finally {
+      setVibeLoading(false);
+    }
+  };
 
   const filteredConnections = connections.filter((conn) => {
     const name = (conn.name || `${conn.user?.firstName || ''} ${conn.user?.lastName || ''}`).toLowerCase();
@@ -141,17 +176,106 @@ export default function ConnectionsPage() {
                   </div>
                 )}
 
-                <div className="connection-card-actions">
+                <div className="connection-card-actions flex gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm flex-1 flex items-center justify-center gap-1"
+                    onClick={() => handleOpenVibe(conn)}
+                  >
+                    <Zap size={14} className="text-violet" /> Vibe Check
+                  </button>
                   <Link
                     to="/chat"
-                    className="btn btn-primary btn-sm w-full flex items-center justify-center gap-2"
+                    className="btn btn-primary btn-sm flex-1 flex items-center justify-center gap-1"
                   >
-                    <MessageSquare size={15} /> Message in Chat
+                    <MessageSquare size={14} /> Chat
                   </Link>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Vibe Breakdown Modal */}
+      {vibePartner && (
+        <div className="modal-overlay" onClick={() => setVibePartner(null)}>
+          <div
+            className="modal-content vibe-drawer-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div className="flex items-center gap-2">
+                <Zap size={20} className="text-violet" />
+                <h3 className="modal-title font-bold">
+                  Shared Vibe: {vibePartner.name || vibePartner.firstName}
+                </h3>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={() => setVibePartner(null)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="vibe-drawer-body p-4">
+              {vibeLoading ? (
+                <div className="py-6 text-center text-muted">Calculating shared vibe...</div>
+              ) : (
+                <>
+                  <div className="vibe-section-box">
+                    <h4 className="vibe-section-title">
+                      <Sparkles size={16} className="text-secondary" /> Why You Two Matched
+                    </h4>
+                    <div className="shared-vibe-list mt-2">
+                      {vibeData?.sharedVibe?.explanations?.map((exp, idx) => (
+                        <div key={idx} className="shared-vibe-item">
+                          <Check size={15} className="text-emerald-400 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">{exp}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {vibeData?.sharedVibe?.sharedInterests?.length > 0 && (
+                      <div className="shared-tags-row mt-3">
+                        <span className="text-xs text-muted">Shared Interests:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {vibeData.sharedVibe.sharedInterests.map((interest, i) => (
+                            <span key={i} className="chip chip-sm">
+                              {interest}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="vibe-section-box mt-3">
+                    <h4 className="vibe-section-title">
+                      <MessageSquare size={16} className="text-violet" /> Suggested Icebreakers
+                    </h4>
+                    <div className="vibe-prompts-list mt-2">
+                      {vibeData?.icebreakers?.prompts?.slice(0, 3).map((prompt, idx) => (
+                        <div key={idx} className="vibe-prompt-card">
+                          <span className="text-sm font-medium">{prompt}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <Link
+                      to="/chat"
+                      className="btn btn-primary btn-sm flex items-center gap-1.5"
+                    >
+                      <MessageSquare size={14} /> Open in Chat
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

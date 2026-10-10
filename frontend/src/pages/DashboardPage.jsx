@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Compass,
   Users,
@@ -11,6 +11,8 @@ import {
   UserCheck,
   CheckCircle2,
   Calendar,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { connectionApi } from '../api/connectionApi';
@@ -21,8 +23,10 @@ import { CardSkeleton } from '../components/SkeletonLoader';
 
 export default function DashboardPage() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [stats, setStats] = useState({
     connectionsCount: 0,
     discoverCount: 0,
@@ -31,55 +35,67 @@ export default function DashboardPage() {
   });
   const [recentConnections, setRecentConnections] = useState([]);
 
+  // Incomplete onboarding → resume onboarding
   useEffect(() => {
-    let isMounted = true;
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        const [connRes, discRes, chatRes, notifRes] = await Promise.allSettled([
-          connectionApi.getConnections(),
-          discoverApi.getProfiles(),
-          chatApi.getConversations(),
-          notificationApi.getNotifications(),
-        ]);
+    if (profile && profile.isOnboarded === false) {
+      navigate('/onboarding', { replace: true });
+    }
+  }, [profile, navigate]);
 
-        if (isMounted) {
-          const connections = connRes.status === 'fulfilled' && connRes.value?.success
-            ? connRes.value.data || []
-            : [];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setLoadError(null);
+      const [connRes, discRes, chatRes, notifRes] = await Promise.allSettled([
+        connectionApi.getConnections(),
+        discoverApi.getProfiles(),
+        chatApi.getConversations(),
+        notificationApi.getNotifications(),
+      ]);
 
-          const discoverProfiles = discRes.status === 'fulfilled' && discRes.value?.success
-            ? discRes.value.data || []
-            : [];
+      const connections =
+        connRes.status === 'fulfilled' && connRes.value?.success && Array.isArray(connRes.value.data)
+          ? connRes.value.data
+          : [];
 
-          const conversations = chatRes.status === 'fulfilled' && chatRes.value?.success
-            ? chatRes.value.data || []
-            : [];
+      const discoverProfiles =
+        discRes.status === 'fulfilled' && discRes.value?.success && Array.isArray(discRes.value.data)
+          ? discRes.value.data
+          : [];
 
-          const notifications = notifRes.status === 'fulfilled' && notifRes.value?.success
-            ? notifRes.value.data || []
-            : [];
+      const conversations =
+        chatRes.status === 'fulfilled' && chatRes.value?.success && Array.isArray(chatRes.value.data)
+          ? chatRes.value.data
+          : [];
 
-          setStats({
-            connectionsCount: connections.length,
-            discoverCount: discoverProfiles.length,
-            conversationsCount: conversations.length,
-            notificationsCount: notifRes.status === 'fulfilled' ? notifRes.value.unreadCount || 0 : 0,
-          });
+      const unreadNotifs =
+        notifRes.status === 'fulfilled' ? notifRes.value?.unreadCount || 0 : 0;
 
-          setRecentConnections(connections.slice(0, 4));
-        }
-      } catch {
-        // Fallback gracefully
-      } finally {
-        if (isMounted) setLoading(false);
+      // Check if all rejected
+      const allFailed = [connRes, discRes, chatRes, notifRes].every(
+        (r) => r.status === 'rejected'
+      );
+      if (allFailed) {
+        setLoadError('Unable to load live campus feed. Please check server connectivity.');
       }
-    };
 
+      setStats({
+        connectionsCount: connections.length,
+        discoverCount: discoverProfiles.length,
+        conversationsCount: conversations.length,
+        notificationsCount: unreadNotifs,
+      });
+
+      setRecentConnections(connections.slice(0, 4));
+    } catch (err) {
+      setLoadError('Failed to synchronize dashboard metrics.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   // Compute profile completion percentage and actionable tips
@@ -115,6 +131,22 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-container">
+      {loadError && (
+        <div className="alert-box alert-danger flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={18} />
+            <span>{loadError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={fetchDashboardData}
+            className="btn btn-xs btn-outline"
+          >
+            <RefreshCw size={12} className="mr-1" /> Retry
+          </button>
+        </div>
+      )}
+
       {/* Top Welcome Banner */}
       <div className="welcome-banner">
         <div className="welcome-info">
@@ -276,30 +308,33 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="connections-mini-grid">
-                {recentConnections.map((conn) => {
-                  const partner = conn.user;
-                  const partnerProfile = conn.profile;
-                  const photo = partnerProfile?.photos?.[0];
+                {recentConnections.map((conn, idx) => {
+                  const partner = conn?.user || (conn?.name ? { firstName: conn.firstName, lastName: conn.lastName } : null);
+                  const partnerProfile = conn?.profile || conn;
+                  const photo = partnerProfile?.photos?.[0] || conn?.avatar;
+                  const fName = partner?.firstName || conn?.firstName || 'Student';
+                  const lName = partner?.lastName || conn?.lastName || '';
+                  const prog = partnerProfile?.program || conn?.program || 'MIT-WPU Student';
 
                   return (
-                    <div key={conn._id || partner?._id} className="connection-mini-card">
+                    <div key={conn?._id || conn?.id || idx} className="connection-mini-card">
                       <div className="connection-mini-avatar">
                         {photo ? (
-                          <img src={photo} alt={partner?.firstName} />
+                          <img src={photo} alt={fName} />
                         ) : (
-                          <span>{partner?.firstName?.[0] || 'S'}</span>
+                          <span>{fName[0] || 'S'}</span>
                         )}
                       </div>
                       <div className="connection-mini-info">
                         <div className="font-semibold text-sm">
-                          {partner?.firstName} {partner?.lastName}
+                          {fName} {lName}
                         </div>
                         <div className="text-xs text-muted">
-                          {partnerProfile?.program || 'MIT-WPU Student'}
+                          {prog}
                         </div>
                       </div>
                       <Link
-                        to={`/chat?conv=${conn.conversationId || ''}`}
+                        to={`/chat?conv=${conn?.conversationId || ''}`}
                         className="btn btn-xs btn-outline"
                       >
                         Chat

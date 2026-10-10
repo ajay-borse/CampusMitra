@@ -14,6 +14,9 @@ import {
   Menu,
   X,
   Radio,
+  Calendar,
+  Sparkles,
+  Flame,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -108,6 +111,38 @@ export default function Navbar() {
                 }
               >
                 <Users size={16} /> Connections
+              </NavLink>
+              <NavLink
+                to="/radar"
+                className={({ isActive }) =>
+                  `nav-link ${isActive ? 'nav-link-active' : ''}`
+                }
+              >
+                <Radio size={16} className="text-pink-400" /> Radar
+              </NavLink>
+              <NavLink
+                to="/plans"
+                className={({ isActive }) =>
+                  `nav-link ${isActive ? 'nav-link-active' : ''}`
+                }
+              >
+                <Calendar size={16} /> Campus Plans
+              </NavLink>
+              <NavLink
+                to="/circles"
+                className={({ isActive }) =>
+                  `nav-link ${isActive ? 'nav-link-active' : ''}`
+                }
+              >
+                <Radio size={16} /> Campus Circles
+              </NavLink>
+              <NavLink
+                to="/pulse"
+                className={({ isActive }) =>
+                  `nav-link ${isActive ? 'nav-link-active' : ''}`
+                }
+              >
+                <Flame size={16} className="text-pink-500" /> Pulse
               </NavLink>
               <NavLink
                 to="/chat"
@@ -269,6 +304,18 @@ export default function Navbar() {
                 </NavLink>
                 <NavLink to="/connections" className="mobile-link">
                   <Users size={18} /> Connections
+                </NavLink>
+                <NavLink to="/radar" className="mobile-link">
+                  <Radio size={18} className="text-pink-400" /> Campus Radar
+                </NavLink>
+                <NavLink to="/plans" className="mobile-link">
+                  <Calendar size={18} /> Campus Plans
+                </NavLink>
+                <NavLink to="/circles" className="mobile-link">
+                  <Radio size={18} /> Campus Circles
+                </NavLink>
+                <NavLink to="/pulse" className="mobile-link">
+                  <Flame size={18} className="text-pink-500" /> Campus Pulse
                 </NavLink>
                 <NavLink to="/chat" className="mobile-link">
                   <MessageSquare size={18} /> Messenger

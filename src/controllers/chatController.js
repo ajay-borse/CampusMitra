@@ -1,6 +1,7 @@
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const Profile = require('../models/Profile');
+const Block = require('../models/Block');
 const { getSocketIO } = require('../sockets/chatSocket');
 
 // ============================================================================
@@ -21,7 +22,42 @@ const getConversations = async (req, res, next) => {
 
     const formatted = await Promise.all(
       conversations.map(async (conv) => {
-        // Other student participant
+        // Plan group conversation handling
+        if (conv.type === 'plan_group') {
+          const Plan = require('../models/Plan');
+          const plan = await Plan.findById(conv.plan);
+          const unreadCount = await Message.countDocuments({
+            conversation: conv._id,
+            sender: { $ne: currentUserId },
+            readBy: { $ne: currentUserId },
+          });
+
+          return {
+            id: conv._id,
+            isGroup: true,
+            type: 'plan_group',
+            planId: conv.plan,
+            peer: {
+              id: conv._id,
+              name: plan ? `📌 ${plan.title}` : 'Campus Plan Group',
+              firstName: plan ? plan.title : 'Plan Group',
+              program: plan ? `${plan.category} Plan • ${conv.participants.length} members` : 'Group Activity',
+              avatar: null,
+              isVerified: true,
+            },
+            lastMessage: conv.lastMessage
+              ? {
+                  text: conv.lastMessage.text,
+                  createdAt: conv.lastMessage.createdAt,
+                  senderId: conv.lastMessage.sender,
+                }
+              : null,
+            unreadCount,
+            updatedAt: conv.updatedAt,
+          };
+        }
+
+        // Other student participant for direct conversation
         const peer = conv.participants.find(
           (p) => p._id.toString() !== currentUserId.toString()
         );
@@ -132,10 +168,17 @@ const sendMessage = async (req, res, next) => {
     const { id } = req.params;
     const { text } = req.body;
 
-    if (!text || !text.trim()) {
+    if (!text || typeof text !== 'string' || !text.trim()) {
       return res.status(400).json({
         success: false,
         message: 'Message text cannot be empty',
+      });
+    }
+
+    if (text.length > 2000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message cannot exceed 2000 characters',
       });
     }
 
@@ -149,6 +192,29 @@ const sendMessage = async (req, res, next) => {
         success: false,
         message: 'Unauthorized: You are not a participant in this conversation',
       });
+    }
+
+    // Check if any participant has blocked the other (for direct conversations)
+    if (conversation.type !== 'plan_group') {
+      const otherParticipantId = conversation.participants.find(
+        (p) => p.toString() !== currentUserId.toString()
+      );
+
+      if (otherParticipantId) {
+        const isBlocked = await Block.findOne({
+          $or: [
+            { blocker: currentUserId, blockedUser: otherParticipantId },
+            { blocker: otherParticipantId, blockedUser: currentUserId },
+          ],
+        });
+
+        if (isBlocked) {
+          return res.status(403).json({
+            success: false,
+            message: 'Messaging is disabled because a block is active between participants',
+          });
+        }
+      }
     }
 
     const message = await Message.create({
@@ -184,8 +250,122 @@ const sendMessage = async (req, res, next) => {
   }
 };
 
+// ============================================================================
+// @desc    Edit a message
+// @route   PUT /api/conversations/:id/messages/:messageId
+// @access  Private
+// ============================================================================
+const editMessage = async (req, res, next) => {
+  try {
+    const currentUserId = req.user._id;
+    const { id, messageId } = req.params;
+    const { text } = req.body;
+
+    const conversation = await Conversation.findOne({
+      _id: id,
+      participants: currentUserId,
+    });
+
+    if (!conversation) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized: You are not a participant in this conversation',
+      });
+    }
+
+    const message = await Message.findOne({ _id: messageId, conversation: id });
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found',
+      });
+    }
+
+    if (message.sender.toString() !== currentUserId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized: You can only edit your own messages',
+      });
+    }
+
+    if (!text || typeof text !== 'string' || !text.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message text cannot be empty',
+      });
+    }
+
+    if (text.length > 2000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message cannot exceed 2000 characters',
+      });
+    }
+
+    message.text = text.trim();
+    await message.save();
+
+    return res.status(200).json({
+      success: true,
+      data: message,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ============================================================================
+// @desc    Delete a message
+// @route   DELETE /api/conversations/:id/messages/:messageId
+// @access  Private
+// ============================================================================
+const deleteMessage = async (req, res, next) => {
+  try {
+    const currentUserId = req.user._id;
+    const { id, messageId } = req.params;
+
+    const conversation = await Conversation.findOne({
+      _id: id,
+      participants: currentUserId,
+    });
+
+    if (!conversation) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized: You are not a participant in this conversation',
+      });
+    }
+
+    const message = await Message.findOne({ _id: messageId, conversation: id });
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found',
+      });
+    }
+
+    if (message.sender.toString() !== currentUserId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized: You can only delete your own messages',
+      });
+    }
+
+    await Message.deleteOne({ _id: messageId });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Message deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getConversations,
   getMessages,
   sendMessage,
+  editMessage,
+  deleteMessage,
 };

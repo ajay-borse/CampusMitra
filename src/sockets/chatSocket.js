@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
+const Block = require('../models/Block');
 
 let io = null;
 
@@ -42,7 +43,7 @@ const initSocket = (httpServer) => {
     socket.join(userId);
 
     // Join conversation room
-    socket.on('join_conversation', async (conversationId) => {
+    socket.on('join_conversation', async (conversationId, callback) => {
       try {
         const conversation = await Conversation.findOne({
           _id: conversationId,
@@ -51,9 +52,19 @@ const initSocket = (httpServer) => {
 
         if (conversation) {
           socket.join(`conv_${conversationId}`);
+          if (typeof callback === 'function') {
+            callback({ success: true, joined: true });
+          }
+        } else {
+          if (typeof callback === 'function') {
+            callback({ success: false, error: 'Unauthorized: You are not a participant in this conversation' });
+          }
         }
       } catch (err) {
         console.error('Error joining conversation room:', err.message);
+        if (typeof callback === 'function') {
+          callback({ success: false, error: err.message });
+        }
       }
     });
 
@@ -70,7 +81,15 @@ const initSocket = (httpServer) => {
     // Direct message event
     socket.on('send_message', async ({ conversationId, text }, callback) => {
       try {
-        if (!text || !text.trim()) return;
+        if (!text || typeof text !== 'string' || !text.trim()) {
+          if (callback) callback({ error: 'Message text cannot be empty' });
+          return;
+        }
+
+        if (text.length > 2000) {
+          if (callback) callback({ error: 'Message cannot exceed 2000 characters' });
+          return;
+        }
 
         const conversation = await Conversation.findOne({
           _id: conversationId,
@@ -80,6 +99,27 @@ const initSocket = (httpServer) => {
         if (!conversation) {
           if (callback) callback({ error: 'Conversation access unauthorized' });
           return;
+        }
+
+        // Check if any participant blocked the other (for direct conversations)
+        if (conversation.type !== 'plan_group') {
+          const otherParticipantId = conversation.participants.find(
+            (p) => p.toString() !== socket.user._id.toString()
+          );
+
+          if (otherParticipantId) {
+            const isBlocked = await Block.findOne({
+              $or: [
+                { blocker: socket.user._id, blockedUser: otherParticipantId },
+                { blocker: otherParticipantId, blockedUser: socket.user._id },
+              ],
+            });
+
+            if (isBlocked) {
+              if (callback) callback({ error: 'Messaging is disabled due to active block' });
+              return;
+            }
+          }
         }
 
         const message = await Message.create({

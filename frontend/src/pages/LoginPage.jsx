@@ -34,7 +34,11 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result.success) {
-      navigate(from, { replace: true });
+      if (result.profile && result.profile.isOnboarded === false) {
+        navigate('/onboarding', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
     } else {
       setError(result.message || 'Login failed. Please check credentials.');
     }

@@ -620,15 +620,15 @@ export default function OnboardingPage() {
                 type="button"
                 onClick={handleBack}
                 disabled={currentStep === 1 || saving}
-                className={`stepper-back-btn ${currentStep === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                className="btn stepper-back-btn"
                 title="Go to previous step"
               >
-                <ChevronLeft size={20} /> Back
+                <ChevronLeft size={18} /> Back
               </button>
 
-              <div className="stepper-counter-pill">
-                <span>Step {currentStep} of {TOTAL_STEPS}</span>
-                <span className="stepper-percentage">
+              <div className="stepper-counter-group">
+                <span className="stepper-step-badge">Step {currentStep} of {TOTAL_STEPS}</span>
+                <span className="stepper-percentage-badge">
                   {Math.round((currentStep / TOTAL_STEPS) * 100)}%
                 </span>
               </div>
@@ -637,7 +637,7 @@ export default function OnboardingPage() {
                 type="button"
                 onClick={handleNext}
                 disabled={saving}
-                className="stepper-next-btn"
+                className="btn stepper-next-btn"
               >
                 {currentStep === TOTAL_STEPS ? 'Finish' : 'Continue'} <ChevronRight size={18} />
               </button>
