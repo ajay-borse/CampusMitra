@@ -3,24 +3,28 @@ import { AlertCircle, X } from 'lucide-react';
 import { moderationApi } from '../api/moderationApi';
 import { useToast } from '../context/ToastContext';
 
-export default function ReportModal({ targetUser, onClose }) {
+export default function ReportModal({ targetUser, reportedUser, onClose, onSuccess }) {
   const { showToast } = useToast();
-  const [reason, setReason] = useState('harassment');
+  const [reason, setReason] = useState('Harassment');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const userToReport = targetUser || reportedUser;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!targetUser?._id && !targetUser?.id) return;
+    const reportedId = userToReport?._id || userToReport?.id || userToReport?.userId;
+    if (!reportedId) return;
 
     try {
       setIsSubmitting(true);
       await moderationApi.reportUser(
-        targetUser._id || targetUser.id,
+        reportedId,
         reason,
         description
       );
       showToast('Safety report submitted to campus moderators.', 'success');
+      if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
       showToast(err.message || 'Failed to submit report', 'error');
@@ -54,11 +58,11 @@ export default function ReportModal({ targetUser, onClose }) {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             >
-              <option value="harassment">Harassment or Bullying</option>
-              <option value="fake_account">Fake or Impersonation Account</option>
-              <option value="inappropriate_content">Inappropriate Photos or Bio</option>
-              <option value="spam">Commercial Spam / Solicitation</option>
-              <option value="other">Other Violation</option>
+              <option value="Harassment">Harassment or Bullying</option>
+              <option value="Fake profile">Fake or Impersonation Account</option>
+              <option value="Inappropriate content">Inappropriate Photos or Bio</option>
+              <option value="Spam">Commercial Spam / Solicitation</option>
+              <option value="Other">Other Violation</option>
             </select>
           </div>
 

@@ -11,5 +11,8 @@ export const adminApi = {
   getAuditLogs: () => apiClient.get('/api/admin/audit-logs'),
   getVerifications: (status) => apiClient.get('/api/admin/verifications', { params: { status } }),
   reviewVerification: (id, payload) => apiClient.put(`/api/admin/verifications/${id}`, payload),
-  getVerificationDocumentUrl: (id) => `/api/admin/verifications/${id}/document`,
+  getVerificationDocumentUrl: (id) => {
+    const token = localStorage.getItem('campusmitra_token') || '';
+    return `/api/admin/verifications/${id}/document?token=${encodeURIComponent(token)}`;
+  },
 };

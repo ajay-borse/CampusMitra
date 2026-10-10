@@ -94,6 +94,8 @@ app.use('/api/connections', requireDB, connectionRoutes);
 app.use('/api/conversations', requireDB, chatRoutes);
 app.use('/api/notifications', requireDB, notificationRoutes);
 app.use('/api/moderation', requireDB, moderationRoutes);
+app.post('/api/reports', requireDB, require('./middleware/authMiddleware').protect, require('./controllers/moderationController').reportUser);
+app.post('/api/blocks', requireDB, require('./middleware/authMiddleware').protect, require('./controllers/moderationController').blockUser);
 app.use('/api/admin', requireDB, adminRoutes);
 app.use('/api/verifications', requireDB, verificationRoutes);
 app.use('/api/interests', requireDB, interestRoutes);

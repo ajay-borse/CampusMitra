@@ -102,7 +102,7 @@ const sendInterest = async (req, res, next) => {
       await Connection.findOneAndUpdate(
         { user1: currentUserId, user2: targetUserId },
         { status: 'interested', initiatedBy: currentUserId },
-        { upsert: true, new: true }
+        { upsert: true, returnDocument: 'after' }
       );
 
       // Create notification for target user
@@ -160,7 +160,7 @@ const sendPass = async (req, res, next) => {
     await Connection.findOneAndUpdate(
       { user1: currentUserId, user2: targetUserId },
       { status: 'passed', initiatedBy: currentUserId },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     return res.status(200).json({

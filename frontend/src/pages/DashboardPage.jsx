@@ -82,17 +82,36 @@ export default function DashboardPage() {
     };
   }, []);
 
-  // Compute profile completion percentage
-  const calculateCompletion = () => {
-    let score = 20; // Basic account exists
-    if (profile?.program) score += 20;
-    if (profile?.bio) score += 20;
-    if (profile?.interests && profile.interests.length > 0) score += 20;
-    if (profile?.photos && profile.photos.length > 0) score += 20;
-    return Math.min(100, score);
+  // Compute profile completion percentage and actionable tips
+  const completionPercent = profile?.completionPercentage || 40;
+
+  // Generate dynamic suggestions based on missing items
+  const getCompletionSuggestions = () => {
+    const tips = [];
+    const photoCount = profile?.photos?.length || 0;
+    const interestCount = profile?.interests?.length || 0;
+    const langCount = profile?.languages?.length || 0;
+
+    if (photoCount < 2) {
+      tips.push('Add your second photo 📸');
+    }
+    if (interestCount < 5) {
+      const needed = Math.max(1, 5 - interestCount);
+      tips.push(`Add ${needed} more interest${needed > 1 ? 's' : ''} ✨`);
+    }
+    if (!profile?.story?.perfectWeekend) {
+      tips.push('Tell us about your perfect weekend ☕');
+    }
+    if (langCount < 2) {
+      tips.push('Add languages you speak 🌍');
+    }
+    if (!user?.isVerified && user?.studentIdVerificationStatus !== 'PENDING') {
+      tips.push('Verify student ID for campus badge 🪪');
+    }
+    return tips;
   };
 
-  const completionPercent = calculateCompletion();
+  const suggestions = getCompletionSuggestions();
 
   return (
     <div className="dashboard-container">
@@ -103,6 +122,9 @@ export default function DashboardPage() {
             <span className="badge badge-accent">🎓 MIT-WPU Student</span>
             {user?.role === 'admin' && (
               <span className="badge badge-warning">🛡️ Campus Moderator</span>
+            )}
+            {user?.isVerified && (
+              <span className="badge badge-success">✓ Verified Student</span>
             )}
           </div>
           <h1 className="welcome-title">
@@ -117,8 +139,8 @@ export default function DashboardPage() {
         {/* Profile Completion Meter */}
         <div className="completion-card">
           <div className="completion-header">
-            <span className="completion-label">Profile Strength</span>
-            <span className="completion-val">{completionPercent}%</span>
+            <span className="completion-label">Your profile is {completionPercent}% complete</span>
+            <span className="completion-val font-bold text-accent-cyan">{completionPercent}%</span>
           </div>
           <div className="progress-track">
             <div
@@ -126,13 +148,19 @@ export default function DashboardPage() {
               style={{ width: `${completionPercent}%` }}
             />
           </div>
-          <Link to="/profile/edit" className="completion-action">
+          {suggestions.length > 0 && completionPercent < 100 && (
+            <div className="completion-tip text-xs text-secondary mt-1 flex items-center gap-1">
+              <Sparkles size={12} className="text-amber-400" />
+              <span>Suggestion: {suggestions[0]}</span>
+            </div>
+          )}
+          <Link to="/profile/edit" className="completion-action mt-2 inline-flex items-center gap-1">
             {completionPercent === 100 ? (
               <span className="text-success flex items-center gap-1">
-                <CheckCircle2 size={14} /> Profile Complete
+                <CheckCircle2 size={14} /> Profile 100% Complete ✨
               </span>
             ) : (
-              <span>Add photos & interests to reach 100% &rarr;</span>
+              <span>Boost your profile &rarr;</span>
             )}
           </Link>
         </div>

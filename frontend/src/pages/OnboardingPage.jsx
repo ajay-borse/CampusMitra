@@ -1854,7 +1854,10 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 className="btn btn-primary btn-lg enter-campus-btn mt-6"
-                onClick={() => navigate('/discover')}
+                onClick={async () => {
+                  await refreshUser();
+                  navigate('/discover');
+                }}
               >
                 <span>Enter CampusMitra ✨</span>
                 <ArrowRight size={20} />

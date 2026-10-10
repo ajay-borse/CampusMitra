@@ -10,8 +10,8 @@ const interestSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ['Tech', 'Creative', 'Entertainment', 'Fitness', 'Lifestyle', 'Career', 'Academic'],
-      default: 'Lifestyle',
+      default: 'Other',
+      trim: true,
     },
     emoji: {
       type: String,

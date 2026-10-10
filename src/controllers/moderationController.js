@@ -30,7 +30,7 @@ const blockUser = async (req, res, next) => {
     await Block.findOneAndUpdate(
       { blocker: currentUserId, blockedUser: targetUserId },
       { reason: reason || 'User requested block' },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     // Sever any connection between them
@@ -67,10 +67,22 @@ const reportUser = async (req, res, next) => {
       });
     }
 
+    const reasonMap = {
+      harassment: 'Harassment',
+      fake_account: 'Fake profile',
+      'fake profile': 'Fake profile',
+      inappropriate_content: 'Inappropriate content',
+      'inappropriate content': 'Inappropriate content',
+      spam: 'Spam',
+      impersonation: 'Impersonation',
+      other: 'Other',
+    };
+    const normalizedReason = reasonMap[reason.toLowerCase()] || reason;
+
     const report = await Report.create({
       reporter: currentUserId,
       reportedUser: reportedUserId,
-      reason,
+      reason: normalizedReason,
       description: description || '',
     });
 
