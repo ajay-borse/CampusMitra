@@ -1,0 +1,167 @@
+/* ==========================================================================
+   CampusMitra — "Campus Workshop" Design Tokens
+   A warm, tactile material system: walnut, cork, paper, leather, brass, felt,
+   enamel, and painted steel. All textures are generated in CSS/SVG — no
+   runtime image dependencies.
+   ========================================================================== */
+
+:root {
+  /* ---- Type ------------------------------------------------------------- */
+  --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Bitter', Georgia, 'Times New Roman', serif;
+  --font-accent: 'Caveat', 'Segoe Script', cursive;
+  --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
+
+  /* ---- Core surfaces ---------------------------------------------------- */
+  --bg-app: #2b1d14;
+  --bg-app-rgb: 43, 29, 20;
+  --bg-surface: #f2e4c7;
+  --bg-surface-elevated: #f8eed8;
+  --bg-card: #f5e8ce;
+  --bg-card-hover: #fbf1dd;
+  --bg-subtle: #e8d6b4;
+  --bg-glass: #f2e4c7;
+
+  --border-subtle: #c8b18a;
+  --border-card: #b59a6e;
+  --border-focus: #a9661f;
+
+  /* ---- Ink & accents ---------------------------------------------------- */
+  --primary: #7d4c15;
+  --primary-hover: #62390d;
+  --primary-light: #a96a21;
+  --primary-glow: rgba(169, 106, 33, 0.22);
+  --lilac: #8b5d27;
+
+  --secondary: #914434;
+  --secondary-hover: #743326;
+  --secondary-glow: rgba(145, 68, 52, 0.2);
+  --pink-light: #a85c45;
+
+  --accent-cyan: #2f615d;
+  --accent-green: #3d6045;
+  --accent-amber: #7b5a16;
+  --accent-red: #8f3226;
+  --accent: #7d4c15;
+
+  --text-primary: #2a2118;
+  --text-secondary: #4e3d2b;
+  --text-muted: #6d5841;
+  --text-faint: #8c755a;
+  --text-on-dark: #f6ead2;
+  --text-on-dark-muted: #d9c3a0;
+
+  /* ---- Materials -------------------------------------------------------- */
+  --walnut: #3a281c;
+  --walnut-dark: #24170f;
+  --walnut-light: #5a3d2a;
+  --cork: #b58a58;
+  --cork-light: #cba46f;
+  --cork-dark: #8c633b;
+  --paper: #f4e7cc;
+  --paper-deep: #e9d7b6;
+  --paper-edge: #cdb68e;
+  --ink: #2a2118;
+  --ink-soft: #4e3d2b;
+  --ink-muted: #6d5841;
+  --leather: #4b2e23;
+  --leather-dark: #342017;
+  --leather-light: #6b4432;
+  --brass: #b7833d;
+  --brass-light: #d7ad6a;
+  --brass-dark: #7b511e;
+  --mustard: #c99a3f;
+  --mustard-light: #e0b85d;
+  --brick: #9c4b36;
+  --brick-light: #bd6a4d;
+  --forest: #3d5545;
+  --forest-light: #526c5a;
+  --ivory: #f0e4c9;
+  --copper: #a9683f;
+  --terracotta: #a9573a;
+  --teal: #356663;
+  --teal-light: #4a7f7b;
+  --sand: #d7c29d;
+  --cream: #f5ead3;
+  --olive: #5d6040;
+  --olive-light: #777a53;
+  --tan: #b78d61;
+  --gunmetal: #33383a;
+  --gunmetal-dark: #24282a;
+  --steel: #7d888b;
+  --steel-light: #aeb7b7;
+  --safety-orange: #d2682f;
+
+  /* ---- Radii ------------------------------------------------------------ */
+  --radius-sm: 4px;
+  --radius-md: 7px;
+  --radius-lg: 11px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Shadows: one top-left light source ------------------------------- */
+  --shadow-sm: 0 2px 5px rgba(29, 16, 8, 0.24);
+  --shadow-md: 0 7px 18px rgba(29, 16, 8, 0.3), 0 2px 4px rgba(29, 16, 8, 0.22);
+  --shadow-lg: 0 18px 38px rgba(20, 10, 4, 0.38), 0 5px 12px rgba(20, 10, 4, 0.24);
+  --shadow-glow: 0 0 0 1px rgba(183, 131, 61, 0.38), 0 10px 24px rgba(95, 58, 22, 0.28);
+  --shadow-pressed: inset 0 2px 5px rgba(50, 29, 12, 0.35), inset 0 -1px 0 rgba(255, 245, 220, 0.5);
+  --shadow-raised: inset 0 1px 0 rgba(255, 246, 225, 0.62), inset 0 -2px 0 rgba(79, 45, 14, 0.28), 0 4px 0 rgba(83, 49, 18, 0.65), 0 8px 14px rgba(30, 16, 7, 0.28);
+  --highlight-top: inset 0 1px 0 rgba(255, 248, 232, 0.7);
+  --inset-soft: inset 0 2px 6px rgba(71, 44, 19, 0.2), inset 0 -1px 0 rgba(255, 249, 233, 0.55);
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 150ms;
+  --dur-base: 240ms;
+  --dur-slow: 350ms;
+
+  /* ---- Textures (hand-written, CSS/SVG only) ---------------------------- */
+  --texture-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.28'/%3E%3C/svg%3E");
+  --texture-fine-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+  --texture-wood:
+    repeating-linear-gradient(93deg, rgba(255, 220, 170, 0.035) 0 2px, rgba(22, 10, 4, 0.08) 2px 4px, transparent 4px 11px),
+    repeating-linear-gradient(88deg, rgba(255, 236, 200, 0.02) 0 1px, rgba(30, 14, 6, 0.06) 1px 3px, transparent 3px 17px),
+    radial-gradient(ellipse at 18% 8%, rgba(162, 106, 58, 0.32), transparent 46%),
+    linear-gradient(145deg, #4a3223 0%, #342216 48%, #2a1b11 100%);
+  --texture-cork:
+    radial-gradient(circle at 18% 28%, rgba(78, 45, 19, 0.35) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 72% 64%, rgba(255, 226, 172, 0.32) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 44% 82%, rgba(75, 42, 16, 0.25) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 86% 18%, rgba(255, 229, 181, 0.22) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 9% 70%, rgba(60, 32, 12, 0.22) 0 1px, transparent 1.6px),
+    linear-gradient(135deg, #c79b64, #b18351 55%, #a27648);
+  --texture-paper:
+    radial-gradient(ellipse at 15% 10%, rgba(255, 252, 242, 0.7), transparent 42%),
+    radial-gradient(ellipse at 85% 92%, rgba(136, 99, 51, 0.12), transparent 48%),
+    repeating-linear-gradient(0deg, rgba(110, 79, 39, 0.025) 0 1px, transparent 1px 4px),
+    linear-gradient(135deg, #f7ecd5, #f0e1c2);
+  --texture-leather:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 226, 188, 0.1), transparent 42%),
+    radial-gradient(circle at 72% 76%, rgba(0, 0, 0, 0.16) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 28% 52%, rgba(255, 223, 180, 0.08) 0 1px, transparent 1.4px),
+    linear-gradient(145deg, #5b392a, #452a1f 58%, #382117);
+  --texture-felt:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.035) 0 1px, transparent 1.4px),
+    linear-gradient(145deg, #46604e, #3a5142 60%, #314536);
+  --texture-enamel:
+    radial-gradient(ellipse at 25% 12%, rgba(255, 255, 255, 0.2), transparent 44%),
+    linear-gradient(145deg, #407572, #356663 55%, #2c5855);
+  --texture-metal:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 4px),
+    linear-gradient(145deg, #4a5052, #33383a 58%, #292d2f);
+  --texture-brushed:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #b9c2c2, #8d989a 55%, #737e80);
+
+  /* Dark-surface text defaults, applied through a class or scope */
+  --dark-text-primary: #f6ead2;
+  --dark-text-secondary: #dfcbab;
+  --dark-text-muted: #c5ad8b;
+  --dark-primary: #e0b15f;
+  --dark-secondary: #e2a48b;
+  --dark-success: #a9c99a;
+  --dark-warning: #ecc46c;
+  --dark-danger: #ee9b86;
+  --dark-info: #9bcac3;
+}

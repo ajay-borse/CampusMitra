@@ -1,0 +1,13 @@
+/* ==========================================================================
+   CampusMitra — stylesheet entry point
+   The visual system is split into four layers:
+   1. tokens  — palette, materials, type, motion, textures
+   2. base    — reset, shell, navigation, utilities
+   3. components — reusable tactile controls
+   4. pages   — module-specific surfaces and layouts
+   ========================================================================== */
+
+@import './styles/tokens.css';
+@import './styles/base.css';
+@import './styles/components.css';
+@import './styles/pages.css';
